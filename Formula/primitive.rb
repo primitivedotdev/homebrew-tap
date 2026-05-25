@@ -13,7 +13,7 @@ class Primitive < Formula
   end
 
   bottle do
-    root_url "https://github.com/primitivedotdev/homebrew-cli/releases/download/primitive-0.31.6"
+    root_url "https://github.com/primitivedotdev/homebrew-tap/releases/download/primitive-0.31.6"
     sha256 cellar: :any_skip_relocation, arm64_tahoe:  "05f0afdcb7fc38a9c23c9e4ee149af0ddb97d055831c7aefbaccc2a64f2f4de6"
     sha256 cellar: :any_skip_relocation, x86_64_linux: "0ea50590d7d446d19dc007c7a6d23016f6c2b02214aff96397bb7aa6aa9145f9"
   end

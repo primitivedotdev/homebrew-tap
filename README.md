@@ -3,13 +3,13 @@
 ## Install
 
 ```bash
-brew install primitivedotdev/cli/primitive
+brew install primitivedotdev/tap/primitive
 ```
 
 Or:
 
 ```bash
-brew tap primitivedotdev/cli
+brew tap primitivedotdev/tap
 brew install primitive
 ```
 
