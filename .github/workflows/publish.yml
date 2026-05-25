@@ -7,10 +7,19 @@ on:
   pull_request_target:
     types:
       - labeled
+  workflow_run:
+    workflows:
+      - brew test-bot
+    types:
+      - completed
+
+concurrency: ${{ github.workflow }}
 
 jobs:
   pr-pull:
-    if: contains(github.event.pull_request.labels.*.name, 'pr-pull')
+    if: >-
+      (github.event_name == 'pull_request_target' && contains(github.event.pull_request.labels.*.name, 'pr-pull')) ||
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
     runs-on: ubuntu-latest
     permissions:
       actions: read
@@ -19,27 +28,73 @@ jobs:
       issues: read
       pull-requests: write
     steps:
+      - name: Resolve pull request
+        id: pull-request
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT_NAME: ${{ github.event_name }}
+          LABELED_PR: ${{ github.event.pull_request.number }}
+          WORKFLOW_RUN_PR: ${{ github.event.workflow_run.pull_requests[0].number }}
+        run: |
+          set -euo pipefail
+
+          if [ "$EVENT_NAME" = "pull_request_target" ]; then
+            pr="$LABELED_PR"
+          else
+            pr="$WORKFLOW_RUN_PR"
+          fi
+
+          if [ -z "$pr" ]; then
+            echo "::notice::No pull request is associated with this workflow run."
+            printf 'number=\n' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          head_repo=$(gh pr view "$pr" --json headRepository --jq '.headRepository.nameWithOwner')
+          head_ref=$(gh pr view "$pr" --json headRefName --jq '.headRefName')
+          base_ref=$(gh pr view "$pr" --json baseRefName --jq '.baseRefName')
+          state=$(gh pr view "$pr" --json state --jq '.state')
+          is_draft=$(gh pr view "$pr" --json isDraft --jq '.isDraft')
+
+          if [ "$EVENT_NAME" = "workflow_run" ]; then
+            if [ "$head_repo" != "$GITHUB_REPOSITORY" ] || [[ "$head_ref" != primitive-* ]] || [ "$base_ref" != "main" ] || [ "$state" != "OPEN" ] || [ "$is_draft" != "false" ]; then
+              echo "::notice::Skipping automatic pr-pull for PR $pr."
+              printf 'number=\n' >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+          fi
+
+          {
+            printf 'number=%s\n' "$pr"
+            printf 'head_ref=%s\n' "$head_ref"
+            printf 'delete_branch=%s\n' "$([ "$head_repo" = "$GITHUB_REPOSITORY" ] && echo true || echo false)"
+          } >> "$GITHUB_OUTPUT"
+
       - name: Set up Homebrew
+        if: steps.pull-request.outputs.number != ''
         uses: Homebrew/actions/setup-homebrew@main
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up git
+        if: steps.pull-request.outputs.number != ''
         uses: Homebrew/actions/git-user-config@main
 
       - name: Pull bottles
+        if: steps.pull-request.outputs.number != ''
         env:
           HOMEBREW_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PULL_REQUEST: ${{ github.event.pull_request.number }}
+          PULL_REQUEST: ${{ steps.pull-request.outputs.number }}
         run: brew pr-pull --debug --tap="$GITHUB_REPOSITORY" "$PULL_REQUEST"
 
       - name: Push commits
+        if: steps.pull-request.outputs.number != ''
         uses: Homebrew/actions/git-try-push@main
         with:
           branch: main
 
       - name: Delete branch
-        if: github.event.pull_request.head.repo.fork == false
+        if: steps.pull-request.outputs.number != '' && steps.pull-request.outputs.delete_branch == 'true'
         env:
-          BRANCH: ${{ github.event.pull_request.head.ref }}
+          BRANCH: ${{ steps.pull-request.outputs.head_ref }}
         run: git push origin --delete "refs/heads/$BRANCH"

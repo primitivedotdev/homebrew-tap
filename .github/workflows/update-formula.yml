@@ -1,0 +1,131 @@
+name: Update primitive formula
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+on:
+  repository_dispatch:
+    types:
+      - cli-release
+  workflow_dispatch:
+    inputs:
+      version:
+        description: CLI version to package. Defaults to npm latest.
+        required: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency: ${{ github.workflow }}
+
+jobs:
+  update-formula:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up git
+        uses: Homebrew/actions/git-user-config@main
+
+      - name: Resolve npm release
+        id: release
+        env:
+          DISPATCH_VERSION: ${{ github.event.client_payload.version }}
+          INPUT_VERSION: ${{ inputs.version }}
+          PACKAGE_NAME: '@primitivedotdev/cli'
+        run: |
+          set -euo pipefail
+
+          version="${INPUT_VERSION:-${DISPATCH_VERSION:-}}"
+
+          if [ -z "$version" ]; then
+            version=$(npm view "$PACKAGE_NAME" version)
+          fi
+
+          url=$(npm view "$PACKAGE_NAME@$version" dist.tarball)
+          if [ -z "$url" ]; then
+            echo "Unable to resolve npm tarball for $PACKAGE_NAME@$version" >&2
+            exit 1
+          fi
+
+          tarball=$(mktemp)
+          curl --fail --location --silent --show-error "$url" --output "$tarball"
+          sha256=$(sha256sum "$tarball" | cut -d ' ' -f 1)
+
+          {
+            printf 'version=%s\n' "$version"
+            printf 'url=%s\n' "$url"
+            printf 'sha256=%s\n' "$sha256"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Update formula
+        id: update
+        env:
+          FORMULA_URL: ${{ steps.release.outputs.url }}
+          FORMULA_SHA256: ${{ steps.release.outputs.sha256 }}
+        run: |
+          set -euo pipefail
+
+          node <<'NODE'
+          const fs = require('node:fs');
+
+          const path = 'Formula/primitive.rb';
+          const url = process.env.FORMULA_URL;
+          const sha256 = process.env.FORMULA_SHA256;
+          const before = fs.readFileSync(path, 'utf8');
+
+          const after = before
+            .replace(/^  url ".*"$/m, `  url "${url}"`)
+            .replace(/^  sha256 "[0-9a-f]{64}"$/m, `  sha256 "${sha256}"`);
+
+          if (!after.includes(`  url "${url}"`) || !after.includes(`  sha256 "${sha256}"`)) {
+            throw new Error('Failed to update primitive formula URL or sha256');
+          }
+
+          if (after === before) {
+            fs.appendFileSync(process.env.GITHUB_OUTPUT, 'changed=false\n');
+          } else {
+            fs.writeFileSync(path, after);
+            fs.appendFileSync(process.env.GITHUB_OUTPUT, 'changed=true\n');
+          }
+          NODE
+
+      - name: Create pull request
+        if: steps.update.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.HOMEBREW_TAP_BOT_TOKEN }}
+          VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${GH_TOKEN:-}" ]; then
+            echo "HOMEBREW_TAP_BOT_TOKEN is required so the update branch and PR trigger bottle CI." >&2
+            exit 1
+          fi
+
+          branch="primitive-$VERSION"
+
+          if git ls-remote --exit-code --heads origin "$branch" >/dev/null 2>&1; then
+            echo "::notice::Branch $branch already exists; leaving existing update PR unchanged."
+            exit 0
+          fi
+
+          git switch -c "$branch"
+          git add Formula/primitive.rb
+          git commit -m "primitive $VERSION"
+          git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git push --set-upstream origin "$branch"
+
+          gh pr create \
+            --base main \
+            --head "$branch" \
+            --title "primitive $VERSION" \
+            --body "Updates the Primitive CLI Homebrew formula to @primitivedotdev/cli $VERSION."
+
+      - name: Report current formula
+        if: steps.update.outputs.changed != 'true'
+        run: echo "primitive is already packaged at ${{ steps.release.outputs.version }}."
