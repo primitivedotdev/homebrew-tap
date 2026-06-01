@@ -50,11 +50,11 @@ jobs:
             exit 0
           fi
 
-          head_repo=$(gh pr view "$pr" --json headRepository --jq '.headRepository.nameWithOwner')
-          head_ref=$(gh pr view "$pr" --json headRefName --jq '.headRefName')
-          base_ref=$(gh pr view "$pr" --json baseRefName --jq '.baseRefName')
-          state=$(gh pr view "$pr" --json state --jq '.state')
-          is_draft=$(gh pr view "$pr" --json isDraft --jq '.isDraft')
+          head_repo=$(gh pr view "$pr" --repo "$GITHUB_REPOSITORY" --json headRepository --jq '.headRepository.nameWithOwner')
+          head_ref=$(gh pr view "$pr" --repo "$GITHUB_REPOSITORY" --json headRefName --jq '.headRefName')
+          base_ref=$(gh pr view "$pr" --repo "$GITHUB_REPOSITORY" --json baseRefName --jq '.baseRefName')
+          state=$(gh pr view "$pr" --repo "$GITHUB_REPOSITORY" --json state --jq '.state')
+          is_draft=$(gh pr view "$pr" --repo "$GITHUB_REPOSITORY" --json isDraft --jq '.isDraft')
 
           if [ "$EVENT_NAME" = "workflow_run" ]; then
             if [ "$head_repo" != "$GITHUB_REPOSITORY" ] || [[ "$head_ref" != primitive-* ]] || [ "$base_ref" != "main" ] || [ "$state" != "OPEN" ] || [ "$is_draft" != "false" ]; then
