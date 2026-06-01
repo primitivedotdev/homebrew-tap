@@ -10,190 +10,18 @@ on:
       - experiment/blacksmith-runner-benchmark
 
 jobs:
-  github-iteration-1:
-    name: github iter 1 / ${{ matrix.name }}
+  blacksmith-direct-linux-iteration-1:
+    name: blacksmith direct linux iter 1 / ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
-    container: ${{ matrix.container }}
     timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
         include:
-          - name: macos-14
-            os: macos-14
-          - name: macos-15
-            os: macos-15
-          - name: macos-26
-            os: macos-26
-          - name: ubuntu-x64
-            os: ubuntu-latest
-            container: ghcr.io/homebrew/brew:main
-          - name: ubuntu-arm64
-            os: ubuntu-24.04-arm
-            container: ghcr.io/homebrew/brew:main
-    permissions:
-      actions: read
-      checks: read
-      contents: read
-      pull-requests: read
-    steps:
-      - name: Set up Homebrew
-        id: set-up-homebrew
-        uses: Homebrew/actions/setup-homebrew@main
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Cache Homebrew Bundler RubyGems
-        uses: actions/cache@v4
-        with:
-          path: ${{ steps.set-up-homebrew.outputs.gems-path }}
-          key: benchmark-github-${{ matrix.name }}-rubygems-${{ steps.set-up-homebrew.outputs.gems-hash }}
-          restore-keys: benchmark-github-${{ matrix.name }}-rubygems-
-
-      - run: brew test-bot --only-cleanup-before
-      - run: brew test-bot --only-setup
-      - run: brew test-bot --only-tap-syntax
-      - run: brew test-bot --only-formulae primitive
-
-      - name: Upload bottles as artifact
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: github-iter-1-${{ matrix.name }}-bottles
-          path: '*.bottle.*'
-          if-no-files-found: error
-
-  github-iteration-2:
-    name: github iter 2 / ${{ matrix.name }}
-    needs: github-iteration-1
-    if: always()
-    runs-on: ${{ matrix.os }}
-    container: ${{ matrix.container }}
-    timeout-minutes: 30
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - name: macos-14
-            os: macos-14
-          - name: macos-15
-            os: macos-15
-          - name: macos-26
-            os: macos-26
-          - name: ubuntu-x64
-            os: ubuntu-latest
-            container: ghcr.io/homebrew/brew:main
-          - name: ubuntu-arm64
-            os: ubuntu-24.04-arm
-            container: ghcr.io/homebrew/brew:main
-    permissions:
-      actions: read
-      checks: read
-      contents: read
-      pull-requests: read
-    steps:
-      - name: Set up Homebrew
-        id: set-up-homebrew
-        uses: Homebrew/actions/setup-homebrew@main
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Cache Homebrew Bundler RubyGems
-        uses: actions/cache@v4
-        with:
-          path: ${{ steps.set-up-homebrew.outputs.gems-path }}
-          key: benchmark-github-${{ matrix.name }}-rubygems-${{ steps.set-up-homebrew.outputs.gems-hash }}
-          restore-keys: benchmark-github-${{ matrix.name }}-rubygems-
-
-      - run: brew test-bot --only-cleanup-before
-      - run: brew test-bot --only-setup
-      - run: brew test-bot --only-tap-syntax
-      - run: brew test-bot --only-formulae primitive
-
-      - name: Upload bottles as artifact
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: github-iter-2-${{ matrix.name }}-bottles
-          path: '*.bottle.*'
-          if-no-files-found: error
-
-  github-iteration-3:
-    name: github iter 3 / ${{ matrix.name }}
-    needs: github-iteration-2
-    if: always()
-    runs-on: ${{ matrix.os }}
-    container: ${{ matrix.container }}
-    timeout-minutes: 30
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - name: macos-14
-            os: macos-14
-          - name: macos-15
-            os: macos-15
-          - name: macos-26
-            os: macos-26
-          - name: ubuntu-x64
-            os: ubuntu-latest
-            container: ghcr.io/homebrew/brew:main
-          - name: ubuntu-arm64
-            os: ubuntu-24.04-arm
-            container: ghcr.io/homebrew/brew:main
-    permissions:
-      actions: read
-      checks: read
-      contents: read
-      pull-requests: read
-    steps:
-      - name: Set up Homebrew
-        id: set-up-homebrew
-        uses: Homebrew/actions/setup-homebrew@main
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Cache Homebrew Bundler RubyGems
-        uses: actions/cache@v4
-        with:
-          path: ${{ steps.set-up-homebrew.outputs.gems-path }}
-          key: benchmark-github-${{ matrix.name }}-rubygems-${{ steps.set-up-homebrew.outputs.gems-hash }}
-          restore-keys: benchmark-github-${{ matrix.name }}-rubygems-
-
-      - run: brew test-bot --only-cleanup-before
-      - run: brew test-bot --only-setup
-      - run: brew test-bot --only-tap-syntax
-      - run: brew test-bot --only-formulae primitive
-
-      - name: Upload bottles as artifact
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: github-iter-3-${{ matrix.name }}-bottles
-          path: '*.bottle.*'
-          if-no-files-found: error
-
-  blacksmith-iteration-1:
-    name: blacksmith iter 1 / ${{ matrix.name }}
-    needs: github-iteration-3
-    if: always()
-    runs-on: ${{ matrix.os }}
-    container: ${{ matrix.container }}
-    timeout-minutes: 30
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - name: macos-15
-            os: blacksmith-12vcpu-macos-15
-          - name: macos-26
-            os: blacksmith-12vcpu-macos-26
           - name: ubuntu-x64
             os: blacksmith-32vcpu-ubuntu-2404
-            container: ghcr.io/homebrew/brew:main
           - name: ubuntu-arm64
             os: blacksmith-32vcpu-ubuntu-2404-arm
-            container: ghcr.io/homebrew/brew:main
     permissions:
       actions: read
       checks: read
@@ -210,8 +38,8 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ steps.set-up-homebrew.outputs.gems-path }}
-          key: benchmark-blacksmith-${{ matrix.name }}-rubygems-${{ steps.set-up-homebrew.outputs.gems-hash }}
-          restore-keys: benchmark-blacksmith-${{ matrix.name }}-rubygems-
+          key: benchmark-blacksmith-direct-${{ matrix.name }}-rubygems-${{ steps.set-up-homebrew.outputs.gems-hash }}
+          restore-keys: benchmark-blacksmith-direct-${{ matrix.name }}-rubygems-
 
       - run: brew test-bot --only-cleanup-before
       - run: brew test-bot --only-setup
@@ -222,31 +50,24 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: blacksmith-iter-1-${{ matrix.name }}-bottles
+          name: blacksmith-direct-iter-1-${{ matrix.name }}-bottles
           path: '*.bottle.*'
           if-no-files-found: error
 
-  blacksmith-iteration-2:
-    name: blacksmith iter 2 / ${{ matrix.name }}
-    needs: blacksmith-iteration-1
+  blacksmith-direct-linux-iteration-2:
+    name: blacksmith direct linux iter 2 / ${{ matrix.name }}
+    needs: blacksmith-direct-linux-iteration-1
     if: always()
     runs-on: ${{ matrix.os }}
-    container: ${{ matrix.container }}
     timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
         include:
-          - name: macos-15
-            os: blacksmith-12vcpu-macos-15
-          - name: macos-26
-            os: blacksmith-12vcpu-macos-26
           - name: ubuntu-x64
             os: blacksmith-32vcpu-ubuntu-2404
-            container: ghcr.io/homebrew/brew:main
           - name: ubuntu-arm64
             os: blacksmith-32vcpu-ubuntu-2404-arm
-            container: ghcr.io/homebrew/brew:main
     permissions:
       actions: read
       checks: read
@@ -263,8 +84,8 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ steps.set-up-homebrew.outputs.gems-path }}
-          key: benchmark-blacksmith-${{ matrix.name }}-rubygems-${{ steps.set-up-homebrew.outputs.gems-hash }}
-          restore-keys: benchmark-blacksmith-${{ matrix.name }}-rubygems-
+          key: benchmark-blacksmith-direct-${{ matrix.name }}-rubygems-${{ steps.set-up-homebrew.outputs.gems-hash }}
+          restore-keys: benchmark-blacksmith-direct-${{ matrix.name }}-rubygems-
 
       - run: brew test-bot --only-cleanup-before
       - run: brew test-bot --only-setup
@@ -275,31 +96,24 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: blacksmith-iter-2-${{ matrix.name }}-bottles
+          name: blacksmith-direct-iter-2-${{ matrix.name }}-bottles
           path: '*.bottle.*'
           if-no-files-found: error
 
-  blacksmith-iteration-3:
-    name: blacksmith iter 3 / ${{ matrix.name }}
-    needs: blacksmith-iteration-2
+  blacksmith-direct-linux-iteration-3:
+    name: blacksmith direct linux iter 3 / ${{ matrix.name }}
+    needs: blacksmith-direct-linux-iteration-2
     if: always()
     runs-on: ${{ matrix.os }}
-    container: ${{ matrix.container }}
     timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
         include:
-          - name: macos-15
-            os: blacksmith-12vcpu-macos-15
-          - name: macos-26
-            os: blacksmith-12vcpu-macos-26
           - name: ubuntu-x64
             os: blacksmith-32vcpu-ubuntu-2404
-            container: ghcr.io/homebrew/brew:main
           - name: ubuntu-arm64
             os: blacksmith-32vcpu-ubuntu-2404-arm
-            container: ghcr.io/homebrew/brew:main
     permissions:
       actions: read
       checks: read
@@ -316,8 +130,8 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ steps.set-up-homebrew.outputs.gems-path }}
-          key: benchmark-blacksmith-${{ matrix.name }}-rubygems-${{ steps.set-up-homebrew.outputs.gems-hash }}
-          restore-keys: benchmark-blacksmith-${{ matrix.name }}-rubygems-
+          key: benchmark-blacksmith-direct-${{ matrix.name }}-rubygems-${{ steps.set-up-homebrew.outputs.gems-hash }}
+          restore-keys: benchmark-blacksmith-direct-${{ matrix.name }}-rubygems-
 
       - run: brew test-bot --only-cleanup-before
       - run: brew test-bot --only-setup
@@ -328,6 +142,6 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: blacksmith-iter-3-${{ matrix.name }}-bottles
+          name: blacksmith-direct-iter-3-${{ matrix.name }}-bottles
           path: '*.bottle.*'
           if-no-files-found: error
