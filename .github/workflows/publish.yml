@@ -51,18 +51,17 @@ jobs:
             exit 0
           fi
 
-          head_repo=$(gh pr view "$pr" --repo "$GITHUB_REPOSITORY" --json headRepository --jq '.headRepository.nameWithOwner')
-          head_ref=$(gh pr view "$pr" --repo "$GITHUB_REPOSITORY" --json headRefName --jq '.headRefName')
-          base_ref=$(gh pr view "$pr" --repo "$GITHUB_REPOSITORY" --json baseRefName --jq '.baseRefName')
-          state=$(gh pr view "$pr" --repo "$GITHUB_REPOSITORY" --json state --jq '.state')
-          is_draft=$(gh pr view "$pr" --repo "$GITHUB_REPOSITORY" --json isDraft --jq '.isDraft')
+          pr_json=$(gh pr view "$pr" --repo "$GITHUB_REPOSITORY" --json baseRefName,headRefName,headRepository,isDraft,state)
+          head_repo=$(jq -r '.headRepository.nameWithOwner' <<<"$pr_json")
+          head_ref=$(jq -r '.headRefName' <<<"$pr_json")
+          base_ref=$(jq -r '.baseRefName' <<<"$pr_json")
+          state=$(jq -r '.state' <<<"$pr_json")
+          is_draft=$(jq -r '.isDraft' <<<"$pr_json")
 
-          if [ "$EVENT_NAME" = "workflow_run" ]; then
-            if [ "$head_repo" != "$GITHUB_REPOSITORY" ] || [[ "$head_ref" != primitive-* ]] || [ "$base_ref" != "main" ] || [ "$state" != "OPEN" ] || [ "$is_draft" != "false" ]; then
-              echo "::notice::Skipping automatic pr-pull for PR $pr."
-              printf 'number=\n' >> "$GITHUB_OUTPUT"
-              exit 0
-            fi
+          if [ "$head_repo" != "$GITHUB_REPOSITORY" ] || [[ "$head_ref" != primitive-* ]] || [ "$base_ref" != "main" ] || [ "$state" != "OPEN" ] || [ "$is_draft" != "false" ]; then
+            echo "::notice::Skipping pr-pull for ineligible PR $pr: state=$state draft=$is_draft head=$head_repo:$head_ref base=$base_ref."
+            printf 'number=\n' >> "$GITHUB_OUTPUT"
+            exit 0
           fi
 
           {
