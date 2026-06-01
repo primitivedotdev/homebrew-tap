@@ -28,6 +28,14 @@ jobs:
       issues: read
       pull-requests: write
     steps:
+      # Required so `gh pr view` (used in Resolve pull request) and the
+      # later Homebrew/actions/git-try-push step have a .git directory
+      # to operate against. Without it the very first `gh pr view` call
+      # exits 1 with `fatal: not a git repository`, which is why every
+      # pr-pull run since the workflow landed has failed and left
+      # version-bump PRs stuck open with no merge.
+      - uses: actions/checkout@v4
+
       - name: Resolve pull request
         id: pull-request
         env:
