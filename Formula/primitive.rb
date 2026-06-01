@@ -13,13 +13,12 @@ class Primitive < Formula
   end
 
   bottle do
-    root_url "https://github.com/primitivedotdev/homebrew-tap/releases/download/primitive-0.36.0"
-    rebuild 1
-    sha256 cellar: :any_skip_relocation, arm64_tahoe:   "abdfa9ff0c55193d2fd1a4cea533adc2edecfa474232154d4e686e505692f418"
-    sha256 cellar: :any_skip_relocation, arm64_sequoia: "96e85b744a1bcc9f3c114fff80ead3bc63a7ae6777d4827dd51ce80d700be2cd"
-    sha256 cellar: :any_skip_relocation, arm64_sonoma:  "d40b788fa66098e2a4ee9e3cc99144e0bd7b01e93ab2bd4e4f5de0862fee8181"
-    sha256 cellar: :any_skip_relocation, arm64_linux:   "b3bcc06e3d125f5fa3b599a028a778332cb0203448c1e2cc4841ce9bb599e7af"
-    sha256 cellar: :any_skip_relocation, x86_64_linux:  "7eb4588f51e0ea63177226b7a1360d6db886c30fdb26a4d326b4d4217fd21587"
+    root_url "https://github.com/primitivedotdev/homebrew-tap/releases/download/primitive-0.37.0"
+    sha256 cellar: :any_skip_relocation, arm64_tahoe:   "9c24a7277ddc5eec1553bb2f22495632c2778facf709fa964374ce9a93e8bf5d"
+    sha256 cellar: :any_skip_relocation, arm64_sequoia: "dd5c81fae43542bb8a9fe91d989994b7b161b74b7c8ae576603caf049c1ef7d9"
+    sha256 cellar: :any_skip_relocation, arm64_sonoma:  "70c6053596550909649590a95581104d1cb3f27b9d8c06e51119d21fce46bac5"
+    sha256 cellar: :any_skip_relocation, arm64_linux:   "f237fe3f5a18ecf1bd5b5e075849426f9ebf648a6480ceb75baf57767f66f856"
+    sha256 cellar: :any_skip_relocation, x86_64_linux:  "b9577654243be74201fb292ed7ce97087eafc7f494a624ec8668a6e3a437c3b9"
   end
 
   depends_on "node"
