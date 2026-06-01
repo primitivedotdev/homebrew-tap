@@ -51,9 +51,10 @@ jobs:
             exit 0
           fi
 
-          pr_json=$(gh pr view "$pr" --repo "$GITHUB_REPOSITORY" --json baseRefName,headRefName,headRepository,isDraft,state)
+          pr_json=$(gh pr view "$pr" --repo "$GITHUB_REPOSITORY" --json baseRefName,headRefName,headRefOid,headRepository,isDraft,state)
           head_repo=$(jq -r '.headRepository.nameWithOwner' <<<"$pr_json")
           head_ref=$(jq -r '.headRefName' <<<"$pr_json")
+          head_sha=$(jq -r '.headRefOid' <<<"$pr_json")
           base_ref=$(jq -r '.baseRefName' <<<"$pr_json")
           state=$(jq -r '.state' <<<"$pr_json")
           is_draft=$(jq -r '.isDraft' <<<"$pr_json")
@@ -62,6 +63,21 @@ jobs:
             echo "::notice::Skipping pr-pull for ineligible PR $pr: state=$state draft=$is_draft head=$head_repo:$head_ref base=$base_ref."
             printf 'number=\n' >> "$GITHUB_OUTPUT"
             exit 0
+          fi
+
+          if [ "$EVENT_NAME" = "pull_request_target" ]; then
+            test_conclusion=$(gh api --method GET "/repos/$GITHUB_REPOSITORY/actions/workflows/tests.yml/runs" \
+              -f event=pull_request \
+              -f head_sha="$head_sha" \
+              -f status=completed \
+              -f per_page=1 \
+              --jq '.workflow_runs[0].conclusion // ""')
+
+            if [ "$test_conclusion" != "success" ]; then
+              echo "::notice::Skipping manual pr-pull for PR $pr until brew test-bot succeeds for $head_sha."
+              printf 'number=\n' >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
           fi
 
           {
