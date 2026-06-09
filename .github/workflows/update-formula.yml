@@ -15,6 +15,7 @@ on:
 
 permissions:
   contents: write
+  id-token: write
   pull-requests: write
 
 concurrency: ${{ github.workflow }}
@@ -30,6 +31,39 @@ jobs:
 
       - name: Set up git
         uses: Homebrew/actions/git-user-config@main
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_HOMEBREW_TAP_ROLE_ARN }}
+          aws-region: us-west-2
+
+      - name: Fetch CI App credential from Secrets Manager
+        id: app-creds
+        run: |
+          set -euo pipefail
+          JSON=$(aws secretsmanager get-secret-value \
+            --secret-id staging/github-ci-app \
+            --query SecretString --output text)
+          APP_ID=$(printf '%s' "$JSON" | jq -r '.app_id')
+          PRIVATE_KEY=$(printf '%s' "$JSON" | jq -r '.private_key')
+          while IFS= read -r line; do
+            [ -n "$line" ] && echo "::add-mask::$line"
+          done <<< "$PRIVATE_KEY"
+          echo "app-id=$APP_ID" >> "$GITHUB_OUTPUT"
+          {
+            echo "private-key<<PEMEOF"
+            printf '%s\n' "$PRIVATE_KEY"
+            echo "PEMEOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Mint org installation token
+        id: app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ steps.app-creds.outputs.app-id }}
+          private-key: ${{ steps.app-creds.outputs.private-key }}
+          owner: primitivedotdev
 
       - name: Resolve npm release
         id: release
@@ -97,15 +131,10 @@ jobs:
       - name: Create pull request
         if: steps.update.outputs.changed == 'true'
         env:
-          GH_TOKEN: ${{ secrets.HOMEBREW_TAP_BOT_TOKEN }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
           VERSION: ${{ steps.release.outputs.version }}
         run: |
           set -euo pipefail
-
-          if [ -z "${GH_TOKEN:-}" ]; then
-            echo "HOMEBREW_TAP_BOT_TOKEN is required so the update branch and PR trigger bottle CI." >&2
-            exit 1
-          fi
 
           branch="primitive-$VERSION"
 
