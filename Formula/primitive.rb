@@ -34,5 +34,17 @@ class Primitive < Formula
 
   test do
     assert_match "operationId", shell_output("#{bin}/primitive list-operations")
+
+    # The generated shell completions must be sourceable scripts, not the CLI's
+    # human-readable setup instructions. Earlier completions shipped the
+    # instructional text into bash_completion.d, where the shell tried to
+    # execute it ("Setup: command not found"). Guard against that regression by
+    # asserting the installed files are real completion scripts.
+    assert_match "complete -F _primitive_autocomplete",
+                 (bash_completion/"primitive").read
+    refute_match "Setup Instructions", (bash_completion/"primitive").read
+    assert_match "#compdef primitive", (zsh_completion/"_primitive").read
+    assert_match "complete -c primitive",
+                 (fish_completion/"primitive.fish").read
   end
 end
