@@ -1,8 +1,8 @@
 class Primitive < Formula
   desc "Official Primitive CLI"
   homepage "https://primitive.dev"
-  url "https://registry.npmjs.org/@primitivedotdev/cli/-/cli-1.2.1.tgz"
-  sha256 "6b227d4a331b31c5f2d44fc4382aa48f8a273111331b3ad5bf20a9576e7c8524"
+  url "https://registry.npmjs.org/@primitivedotdev/cli/-/cli-1.3.0.tgz"
+  sha256 "c425b412d7ebc617626a4e5cfd5be962a7c9cd14aded7a5037d1e66fbacfc0f0"
   license "MIT"
 
   livecheck do
