@@ -6,7 +6,7 @@ class Primitive < Formula
   license "MIT"
 
   livecheck do
-    url "https://registry.npmjs.org/@primitivedotdev/cli/latest"
+    url "https://registry.npmjs.org/primitive/latest"
     strategy :json do |json|
       json["version"]
     end

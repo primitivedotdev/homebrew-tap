@@ -70,7 +70,7 @@ jobs:
         env:
           DISPATCH_VERSION: ${{ github.event.client_payload.version }}
           INPUT_VERSION: ${{ inputs.version }}
-          PACKAGE_NAME: '@primitivedotdev/cli'
+          PACKAGE_NAME: 'primitive'
         run: |
           set -euo pipefail
 
@@ -153,7 +153,7 @@ jobs:
             --base main \
             --head "$branch" \
             --title "primitive $VERSION" \
-            --body "Updates the Primitive CLI Homebrew formula to @primitivedotdev/cli $VERSION."
+            --body "Updates the Primitive CLI Homebrew formula to primitive $VERSION."
 
       - name: Report current formula
         if: steps.update.outputs.changed != 'true'
