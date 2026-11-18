@@ -24,13 +24,14 @@ class Primitive < Formula
 
   def install
     system "npm", "install", *std_npm_args
-    bin.install_symlink libexec/"bin/primitive"
+    bin.install_symlink libexec/"bin/primitive", libexec/"bin/prim"
     man1.install "man/primitive.1"
     generate_completions_from_executable(bin/"primitive", "completion")
   end
 
   test do
     assert_match "operationId", shell_output("#{bin}/primitive list-operations")
+    assert_match "primitive/#{version}", shell_output("#{bin}/prim --version")
 
     # The generated shell completions must be sourceable scripts, not the CLI's
     # human-readable setup instructions. Earlier completions shipped the
