@@ -57,4 +57,6 @@ jobs:
         with:
           name: bottles_${{ matrix.os }}
           path: '*.bottle.*'
-          if-no-files-found: error
+          # Release PRs (primitive-* branches) must produce bottles for brew
+          # pr-pull. Other PRs may change no formula and so build none.
+          if-no-files-found: ${{ startsWith(github.head_ref, 'primitive-') && 'error' || 'warn' }}
