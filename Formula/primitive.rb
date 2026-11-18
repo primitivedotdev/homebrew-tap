@@ -27,9 +27,7 @@ class Primitive < Formula
     system "npm", "install", *std_npm_args
     bin.install_symlink libexec/"bin/primitive"
     man1.install "man/primitive.1"
-    generate_completions_from_executable(
-      bin/"primitive", "completion", shells: [:bash, :zsh, :fish]
-    )
+    generate_completions_from_executable(bin/"primitive", "completion")
   end
 
   test do
