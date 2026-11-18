@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: CLI version to package. Defaults to npm latest.
+        description: CLI version to package. Must be the npm latest version; defaults to it.
         required: false
 
 permissions:
@@ -78,6 +78,35 @@ jobs:
 
           if [ -z "$version" ]; then
             version=$(npm view "$PACKAGE_NAME" version)
+          fi
+
+          if [ -z "$version" ]; then
+            echo "::error::Unable to resolve a $PACKAGE_NAME version to package."
+            exit 1
+          fi
+
+          # The tap only ever carries the npm `latest` release. A version that
+          # is not `latest` (a prerelease, an older release) is refused. The
+          # registry can briefly report the previous `latest` (or fail) right
+          # after a publish, so a stable version gets a few minutes to catch up.
+          attempts=10
+          if [[ "$version" == *-* ]]; then
+            attempts=1
+          fi
+          latest=
+          for attempt in $(seq 1 "$attempts"); do
+            latest=$(npm view "$PACKAGE_NAME" dist-tags.latest) || latest=
+            if [ "$version" = "$latest" ]; then
+              break
+            fi
+            if [ "$attempt" -lt "$attempts" ]; then
+              echo "npm latest for $PACKAGE_NAME is ${latest:-unset}, waiting for $version ($attempt/$attempts)"
+              sleep 30
+            fi
+          done
+          if [ "$version" != "$latest" ]; then
+            echo "::error::Refusing to package $PACKAGE_NAME $version: npm latest is ${latest:-unset}. The tap only tracks npm latest."
+            exit 1
           fi
 
           url=$(npm view "$PACKAGE_NAME@$version" dist.tarball)
